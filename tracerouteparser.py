@@ -38,6 +38,7 @@ Courtesy of the Netalyzr project: http://netalyzr.icsi.berkeley.edu
 
 import cStringIO
 import re
+import csv
 
 
 class Probe(object):
@@ -127,6 +128,21 @@ class TracerouteParser(object):
                 text_output += "\trtt: %s\n" % p.rtt
                 text_output += "\t---\n"
         return text_output
+
+    def to_csv(self, given_filename):
+        try:
+            f = open(given_filename, 'w')
+        except IOError:
+            return False
+        csvwriter = csv.writer(f)
+        csvwriter.writerow(('hop', 'probe', 'ip', 'domain', 'rtt'))
+        for hopcount, h in enumerate(self.hops):
+            for probecount, p in enumerate(h.probes):
+                if not p.ipaddr:
+                    p.ipaddr = p.name = p.rtt = "*"
+                csvwriter.writerow((hopcount+1, probecount+1, p.ipaddr, p.name, str(p.rtt)))
+        f.close()
+        return given_filename
 
     def parse_data(self, data):
         """Parser entry point, given string of the whole traceroute output."""
@@ -230,7 +246,6 @@ traceroute to edgecastcdn.net (72.21.81.13), 30 hops max, 38 byte packets
     # Built-up data structures as string. Should look effectively
     # identical to the above input string.
     print(trp.text_summary())
-
 
 if __name__ == '__main__':
     demo()
