@@ -142,7 +142,7 @@ class TracerouteParser(object):
                     p.ipaddr = p.name = p.rtt = "*"
                 csvwriter.writerow((hopcount+1, probecount+1, p.ipaddr, p.name, str(p.rtt)))
         f.close()
-        return given_filename
+        return True
 
     def parse_data(self, data):
         """Parser entry point, given string of the whole traceroute output."""
