@@ -163,16 +163,19 @@ class TracerouteParser(object):
                 # This is an additional RTT for the same endpoint we
                 # saw before.
                 probe.rtt = float(tok1)
-                if len(parts) > 0 and parts[0].startswith('!'):
-                    probe.anno = parts.pop(0)
-            else:
+            elif tok2[0] == '(':
                 # This is a probe result from a different endpoint
                 probe.name = tok1
                 probe.ipaddr = tok2[1:][:-1]
                 probe.rtt = float(parts.pop(0))
                 parts.pop(0) # Drop "ms"
-                if len(parts) > 0 and parts[0].startswith('!'):
-                    probe.anno = parts.pop(0)
+            else:
+                probe.name = tok1
+                probe.ipaddr = tok1
+                probe.rtt = float(tok2)
+                parts.pop(0)
+            if len(parts) > 0 and parts[0].startswith('!'):
+                probe.anno = parts.pop(0)
 
             return probe
 
