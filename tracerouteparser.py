@@ -42,16 +42,19 @@ except ImportError:
     from io import StringIO
 
 import re
+import csv
+
 
 class Probe(object):
     """
     Abstraction of an individual probe in a traceroute.
     """
+
     def __init__(self):
         self.ipaddr = None
         self.name = None
-        self.rtt = None # RTT in ms
-        self.anno = None # Annotation, such as !H, !N, !X, etc
+        self.rtt = None  # RTT in ms
+        self.anno = None  # Annotation, such as !H, !N, !X, etc
 
     def clone(self):
         """
@@ -62,13 +65,15 @@ class Probe(object):
         copy.name = self.name
         return copy
 
+
 class Hop(object):
     """
     A traceroute hop consists of a number of probes.
     """
+
     def __init__(self):
-        self.idx = None # Hop count, starting at 1
-        self.probes = [] # Series of Probe instances
+        self.idx = None  # Hop count, starting at 1
+        self.probes = []  # Series of Probe instances
 
     def add_probe(self, probe):
         """Adds a Probe instance to this hop's results."""
@@ -90,6 +95,7 @@ class Hop(object):
             last_probe = probe
         return '  '.join(res)
 
+
 class TracerouteParser(object):
     """
     A parser for traceroute text. A traceroute consists of a sequence of
@@ -104,12 +110,43 @@ class TracerouteParser(object):
         self.hops = []
 
     def __str__(self):
-        res = ['traceroute to %s (%s)' % (self.dest_name, self.dest_ip) ]
+        res = ['traceroute to %s (%s)' % (self.dest_name, self.dest_ip)]
         ctr = 1
         for hop in self.hops:
             res.append('%2d  %s' % (ctr, str(hop)))
             ctr += 1
         return '\n'.join(res)
+
+    def text_summary(self):
+        text_output = ""
+        for hopcount, h in enumerate(self.hops):
+            if hopcount != 0:
+                text_output += "\n"
+            text_output += "hop #%s\n" % (hopcount + 1)
+            text_output += "---\n"
+            for probecount, p in enumerate(h.probes):
+                text_output += "\tprobe #%s\n" % (probecount + 1)
+                text_output += "\tip: %s\n" % p.ipaddr
+                if p.ipaddr != p.name:
+                    text_output += "\tdomain: %s\n" % p.name
+                text_output += "\trtt: %s\n" % p.rtt
+                text_output += "\t---\n"
+        return text_output
+
+    def to_csv(self, given_filename):
+        try:
+            f = open(given_filename, 'w')
+        except IOError:
+            return False
+        csvwriter = csv.writer(f)
+        csvwriter.writerow(('hop', 'probe', 'ip', 'domain', 'rtt'))
+        for hopcount, h in enumerate(self.hops):
+            for probecount, p in enumerate(h.probes):
+                if not p.ipaddr:
+                    p.ipaddr = p.name = p.rtt = "*"
+                csvwriter.writerow((hopcount+1, probecount+1, p.ipaddr, p.name, str(p.rtt)))
+        f.close()
+        return True
 
     def parse_data(self, data):
         """Parser entry point, given string of the whole traceroute output."""
@@ -138,7 +175,7 @@ class TracerouteParser(object):
     def _parse_hop(self, line):
         """Internal helper, parses a single line in the output."""
         parts = line.split()
-        parts.pop(0) # Drop hop number, implicit in resulting sequence
+        parts.pop(0)  # Drop hop number, implicit in resulting sequence
         hop = Hop()
         probe = None
 
@@ -149,7 +186,8 @@ class TracerouteParser(object):
 
         return hop
 
-    def _parse_probe(self, parts, last_probe=None):
+    @staticmethod
+    def _parse_probe(parts, last_probe=None):
         """Internal helper, parses the next probe's results from a line."""
         try:
             probe = Probe() if last_probe is None else last_probe.clone()
@@ -181,6 +219,7 @@ class TracerouteParser(object):
 
         except (IndexError, ValueError):
             return None
+
 
 def demo():
     """A simple example."""
@@ -214,6 +253,7 @@ traceroute to edgecastcdn.net (72.21.81.13), 30 hops max, 38 byte packets
     # Built-up data structures as string. Should look effectively
     # identical to the above input string.
     print(trp)
+    print(trp.text_summary())
 
 if __name__ == '__main__':
     demo()
