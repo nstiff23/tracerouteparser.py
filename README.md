@@ -3,6 +3,8 @@ tracerouteparser.py
 
 tracerouteparser.py is a Python module that implements a parser for traceroute output. It's not a traceroute implementation.
 
+This fork merges several features from jakubd/tracerouteparser.py and adds the ability to parse traceroutes with only IPs (no hostnames).
+
 Features
 --------
 
